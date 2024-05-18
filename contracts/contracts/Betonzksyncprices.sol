@@ -7,6 +7,37 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract Betonzksyncprices is Ownable, ReentrancyGuard {
+
+    struct Asset {
+        string symbol;
+        address aggregatorAddress;
+    }
+
+    Asset[] public assets;
+
+    function getAssetCount() external view returns (uint256) {
+        return assets.length;
+    }
+
+    function getAsset(
+        uint256 index
+    ) external view returns (string memory, int256) {
+        require(index < assets.length, "Invalid asset index");
+
+        Asset memory asset = assets[index];
+        return (asset.symbol, getLatestData(asset.aggregatorAddress));
+    }
+
+    function getLatestData(
+        address aggregatorAddress
+    ) internal view returns (int256) {
+        AggregatorV3Interface dataFeed = AggregatorV3Interface(
+            aggregatorAddress
+        );
+        (, int256 answer, , , ) = dataFeed.latestRoundData();
+        return answer / 1e8;
+    }
+
     struct Bet {
         string description;
         string option1;
@@ -41,6 +72,19 @@ contract Betonzksyncprices is Ownable, ReentrancyGuard {
     constructor(address _usdcToken) Ownable(msg.sender) {
         usdcToken = IERC20(_usdcToken);
         dataFeed = AggregatorV3Interface(0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1);
+
+        assets.push(
+            Asset("BTC/USD", 0x95Bc57e794aeb02E4a16eff406147f3ce2531F83)
+        );
+        assets.push(
+            Asset("ETH/USD", 0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF)
+        );
+        assets.push(
+            Asset("LINK/USD", 0x894423C43cD7230Cd22a47B329E96097e6355292)
+        );
+        assets.push(
+            Asset("DAI/USD", 0x3aE81863E2F4cdea95b0c96E9C3C71cf1e10EFFE)
+        );
     }
 
     function createBet(string memory _description, string memory _option1, string memory _option2, uint256 _deadline) external  {
